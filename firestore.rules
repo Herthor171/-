@@ -1,0 +1,341 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Primitive Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'herthor12@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isOwner(ownerId) {
+      return isSignedIn() && request.auth.uid == ownerId;
+    }
+
+    // 3. Entity Validation Helpers
+    function isValidPatient(data) {
+      return data.keys().hasAll(['fullName', 'phone', 'age', 'gender', 'address', 'allergies', 'medicalHistory', 'dentalChartNotes', 'lastVisit', 'ownerId', 'createdAt', 'updatedAt']) &&
+             data.keys().hasOnly(['fullName', 'phone', 'age', 'gender', 'address', 'allergies', 'medicalHistory', 'dentalChartNotes', 'lastVisit', 'ownerId', 'createdAt', 'updatedAt']) &&
+             data.fullName is string && data.fullName.size() >= 1 && data.fullName.size() <= 120 &&
+             data.phone is string && data.phone.size() >= 1 && data.phone.size() <= 40 &&
+             data.age is number && data.age >= 0 && data.age <= 130 &&
+             data.gender is string && data.gender in ['Male', 'Female', 'Other'] &&
+             data.address is string && data.address.size() <= 250 &&
+             data.allergies is string && data.allergies.size() <= 300 &&
+             data.medicalHistory is string && data.medicalHistory.size() <= 1000 &&
+             data.dentalChartNotes is string && data.dentalChartNotes.size() <= 2000 &&
+             data.lastVisit is string && data.lastVisit.size() <= 40 &&
+             data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+             data.ownerId == request.auth.uid &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidAppointment(data) {
+      return data.keys().hasAll(['patientId', 'patientName', 'patientPhone', 'dentistName', 'treatmentType', 'appointmentDate', 'appointmentTime', 'status', 'reminderStatus', 'reminderChannel', 'notes', 'ownerId', 'createdAt', 'updatedAt']) &&
+             data.keys().hasOnly(['patientId', 'patientName', 'patientPhone', 'dentistName', 'treatmentType', 'appointmentDate', 'appointmentTime', 'status', 'reminderStatus', 'reminderChannel', 'notes', 'ownerId', 'createdAt', 'updatedAt']) &&
+             data.patientId is string && data.patientId.size() >= 1 && data.patientId.size() <= 128 &&
+             data.patientName is string && data.patientName.size() >= 1 && data.patientName.size() <= 120 &&
+             data.patientPhone is string && data.patientPhone.size() >= 1 && data.patientPhone.size() <= 40 &&
+             data.dentistName is string && data.dentistName.size() >= 1 && data.dentistName.size() <= 120 &&
+             data.treatmentType is string && data.treatmentType.size() >= 1 && data.treatmentType.size() <= 150 &&
+             data.appointmentDate is string && data.appointmentDate.size() >= 1 && data.appointmentDate.size() <= 30 &&
+             data.appointmentTime is string && data.appointmentTime.size() >= 1 && data.appointmentTime.size() <= 20 &&
+             data.status is string && data.status in ['Scheduled', 'Confirmed', 'Completed', 'Cancelled'] &&
+             data.reminderStatus is string && data.reminderStatus in ['Pending', 'Queued', 'Sent'] &&
+             data.reminderChannel is string && data.reminderChannel in ['WhatsApp', 'SMS', 'Phone'] &&
+             data.notes is string && data.notes.size() <= 500 &&
+             data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+             data.ownerId == request.auth.uid &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidEhrRecord(data) {
+      return data.keys().hasAll(['patientId', 'patientName', 'visitDate', 'toothNumber', 'diagnosis', 'procedure', 'prescription', 'dentistName', 'feeLak', 'clinicalNotes', 'ownerId', 'createdAt', 'updatedAt']) &&
+             data.keys().hasOnly(['patientId', 'patientName', 'visitDate', 'toothNumber', 'diagnosis', 'procedure', 'prescription', 'dentistName', 'feeLak', 'clinicalNotes', 'ownerId', 'createdAt', 'updatedAt']) &&
+             data.patientId is string && data.patientId.size() >= 1 && data.patientId.size() <= 128 &&
+             data.patientName is string && data.patientName.size() >= 1 && data.patientName.size() <= 120 &&
+             data.visitDate is string && data.visitDate.size() >= 1 && data.visitDate.size() <= 30 &&
+             data.toothNumber is string && data.toothNumber.size() >= 1 && data.toothNumber.size() <= 40 &&
+             data.diagnosis is string && data.diagnosis.size() >= 1 && data.diagnosis.size() <= 500 &&
+             data.procedure is string && data.procedure.size() >= 1 && data.procedure.size() <= 500 &&
+             data.prescription is string && data.prescription.size() <= 500 &&
+             data.dentistName is string && data.dentistName.size() >= 1 && data.dentistName.size() <= 120 &&
+             data.feeLak is number && data.feeLak >= 0 &&
+             data.clinicalNotes is string && data.clinicalNotes.size() <= 1000 &&
+             data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+             data.ownerId == request.auth.uid &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidInventoryItem(data) {
+      return data.keys().hasAll(['itemName', 'sku', 'category', 'quantity', 'minThreshold', 'unit', 'unitCostLak', 'supplier', 'expiryDate', 'ownerId', 'createdAt', 'updatedAt']) &&
+             data.keys().hasOnly(['itemName', 'sku', 'category', 'carriedForwardQty', 'quantity', 'minThreshold', 'unit', 'unitCostLak', 'supplier', 'expiryDate', 'ownerId', 'createdAt', 'updatedAt']) &&
+             data.itemName is string && data.itemName.size() >= 1 && data.itemName.size() <= 150 &&
+             data.sku is string && data.sku.size() >= 1 && data.sku.size() <= 50 &&
+             data.category is string && data.category in ['Consumables', 'Instruments', 'Orthodontics', 'Anesthetics', 'PPE', 'Prosthetics'] &&
+             (!('carriedForwardQty' in data) || (data.carriedForwardQty is number && data.carriedForwardQty >= 0)) &&
+             data.quantity is number && data.quantity >= 0 &&
+             data.minThreshold is number && data.minThreshold >= 0 &&
+             data.unit is string && data.unit.size() >= 1 && data.unit.size() <= 40 &&
+             data.unitCostLak is number && data.unitCostLak >= 0 &&
+             data.supplier is string && data.supplier.size() <= 150 &&
+             data.expiryDate is string && data.expiryDate.size() <= 30 &&
+             data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+             data.ownerId == request.auth.uid &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['txDate', 'txMonth', 'txType', 'category', 'description', 'amountLak', 'paymentMethod', 'referenceName', 'ownerId', 'createdAt', 'updatedAt']) &&
+             data.keys().hasOnly(['txDate', 'txMonth', 'txType', 'category', 'description', 'amountLak', 'discountLak', 'paidAmountLak', 'balanceDueLak', 'nextPaymentDate', 'installmentCount', 'customerPhone', 'debtReminderStatus', 'paymentMethod', 'referenceName', 'ownerId', 'createdAt', 'updatedAt']) &&
+             data.txDate is string && data.txDate.size() >= 1 && data.txDate.size() <= 30 &&
+             data.txMonth is string && data.txMonth.size() >= 1 && data.txMonth.size() <= 15 &&
+             data.txType is string && data.txType in ['Income', 'Expense'] &&
+             data.category is string && data.category.size() >= 1 && data.category.size() <= 100 &&
+             data.description is string && data.description.size() >= 1 && data.description.size() <= 300 &&
+             data.amountLak is number && data.amountLak >= 0 &&
+             (!('discountLak' in data) || (data.discountLak is number && data.discountLak >= 0)) &&
+             (!('paidAmountLak' in data) || (data.paidAmountLak is number && data.paidAmountLak >= 0)) &&
+             (!('balanceDueLak' in data) || (data.balanceDueLak is number && data.balanceDueLak >= 0)) &&
+             (!('nextPaymentDate' in data) || (data.nextPaymentDate is string && data.nextPaymentDate.size() <= 30)) &&
+             (!('installmentCount' in data) || (data.installmentCount is number && data.installmentCount >= 0)) &&
+             (!('customerPhone' in data) || (data.customerPhone is string && data.customerPhone.size() <= 40)) &&
+             (!('debtReminderStatus' in data) || (data.debtReminderStatus is string && data.debtReminderStatus in ['None', 'Pending', 'Sent'])) &&
+             data.paymentMethod is string && data.paymentMethod in ['BCEL OnePay', 'Cash', 'Bank Transfer', 'Card', 'ຕິດໜີ້ / ຜ່ອນຈ່າຍ (Credit)'] &&
+             data.referenceName is string && data.referenceName.size() <= 120 &&
+             data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+             data.ownerId == request.auth.uid &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidStaffMember(data) {
+      return data.keys().hasAll(['fullName', 'email', 'phone', 'role', 'specialty', 'shiftSchedule', 'baseSalaryLak', 'activeStatus', 'ownerId', 'createdAt', 'updatedAt']) &&
+             data.keys().hasOnly(['fullName', 'email', 'phone', 'role', 'specialty', 'shiftSchedule', 'baseSalaryLak', 'salaryAdvanceLak', 'bonusLak', 'commissionLak', 'lastPaidMonth', 'activeStatus', 'ownerId', 'createdAt', 'updatedAt']) &&
+             data.fullName is string && data.fullName.size() >= 1 && data.fullName.size() <= 120 &&
+             data.email is string && data.email.size() <= 120 &&
+             data.phone is string && data.phone.size() >= 1 && data.phone.size() <= 40 &&
+             data.role is string && data.role.size() >= 1 && data.role.size() <= 120 &&
+             data.specialty is string && data.specialty.size() <= 120 &&
+             data.shiftSchedule is string && data.shiftSchedule.size() <= 120 &&
+             data.baseSalaryLak is number && data.baseSalaryLak >= 0 &&
+             (!('salaryAdvanceLak' in data) || (data.salaryAdvanceLak is number && data.salaryAdvanceLak >= 0)) &&
+             (!('bonusLak' in data) || (data.bonusLak is number && data.bonusLak >= 0)) &&
+             (!('commissionLak' in data) || (data.commissionLak is number && data.commissionLak >= 0)) &&
+             (!('lastPaidMonth' in data) || (data.lastPaidMonth is string && data.lastPaidMonth.size() <= 20)) &&
+             data.activeStatus is string && data.activeStatus in ['Active', 'On Leave', 'Inactive'] &&
+             data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+             data.ownerId == request.auth.uid &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidBackupLog(data) {
+      return data.keys().hasAll(['backupDate', 'backupType', 'spreadsheetId', 'spreadsheetUrl', 'recordsCount', 'status', 'ownerId', 'createdAt', 'updatedAt']) &&
+             data.keys().hasOnly(['backupDate', 'backupType', 'spreadsheetId', 'spreadsheetUrl', 'recordsCount', 'status', 'ownerId', 'createdAt', 'updatedAt']) &&
+             data.backupDate is string && data.backupDate.size() >= 1 && data.backupDate.size() <= 40 &&
+             data.backupType is string && data.backupType in ['Google Sheets Sync', 'Cloud JSON Snapshot'] &&
+             data.spreadsheetId is string && data.spreadsheetId.size() <= 150 &&
+             data.spreadsheetUrl is string && data.spreadsheetUrl.size() <= 300 &&
+             data.recordsCount is number && data.recordsCount >= 0 &&
+             data.status is string && data.status in ['Completed', 'Failed'] &&
+             data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+             data.ownerId == request.auth.uid &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidChatMessage(data) {
+      return data.keys().hasAll(['role', 'text', 'persona', 'modelUsed', 'ownerId', 'createdAt']) &&
+             data.keys().hasOnly(['role', 'text', 'persona', 'modelUsed', 'ownerId', 'createdAt']) &&
+             data.role is string && data.role in ['user', 'model'] &&
+             data.text is string && data.text.size() >= 1 && data.text.size() <= 10000 &&
+             data.persona is string && data.persona.size() >= 1 && data.persona.size() <= 80 &&
+             data.modelUsed is string && data.modelUsed.size() >= 1 && data.modelUsed.size() <= 80 &&
+             data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+             data.ownerId == request.auth.uid &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidClinicFile(data) {
+      return data.keys().hasAll(['fileName', 'category', 'mimeType', 'sizeBytes', 'contentData', 'notes', 'ownerId', 'createdAt']) &&
+             data.keys().hasOnly(['fileName', 'category', 'mimeType', 'sizeBytes', 'contentData', 'notes', 'ownerId', 'createdAt']) &&
+             data.fileName is string && data.fileName.size() >= 1 && data.fileName.size() <= 180 &&
+             data.category is string && data.category in ['Patients', 'EHR', 'Appointments', 'Inventory', 'Financials', 'Payroll', 'Uploaded Document'] &&
+             data.mimeType is string && data.mimeType.size() >= 1 && data.mimeType.size() <= 100 &&
+             data.sizeBytes is number && data.sizeBytes >= 0 && data.sizeBytes <= 950000 &&
+             data.contentData is string && data.contentData.size() >= 1 && data.contentData.size() <= 900000 &&
+             data.notes is string && data.notes.size() <= 300 &&
+             data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+             data.ownerId == request.auth.uid &&
+             data.createdAt is timestamp;
+    }
+
+    // 4. Collection Rules
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && isValidId(adminId) && (request.auth.uid == adminId || isAdmin());
+      allow list: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /patients/{patientId} {
+      allow get: if isSignedIn() && isValidId(patientId) && (isOwner(existing().ownerId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(patientId) && isValidPatient(incoming()) &&
+                    incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(patientId) && isValidPatient(incoming()) &&
+                    incoming().ownerId == existing().ownerId &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().updatedAt == request.time &&
+                    (
+                      isAdmin() ||
+                      (isOwner(existing().ownerId) && incoming().diff(existing()).affectedKeys().hasOnly(['fullName', 'phone', 'age', 'gender', 'address', 'allergies', 'medicalHistory', 'dentalChartNotes', 'lastVisit', 'updatedAt']))
+                    );
+      allow delete: if isVerifiedUser() && isValidId(patientId) && (isOwner(existing().ownerId) || isAdmin());
+    }
+
+    match /appointments/{appointmentId} {
+      allow get: if isSignedIn() && isValidId(appointmentId) && (isOwner(existing().ownerId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(appointmentId) && isValidAppointment(incoming()) &&
+                    incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(appointmentId) && isValidAppointment(incoming()) &&
+                    incoming().ownerId == existing().ownerId &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().updatedAt == request.time &&
+                    (
+                      isAdmin() ||
+                      (isOwner(existing().ownerId) && incoming().diff(existing()).affectedKeys().hasOnly(['patientId', 'patientName', 'patientPhone', 'dentistName', 'treatmentType', 'appointmentDate', 'appointmentTime', 'status', 'reminderStatus', 'reminderChannel', 'notes', 'updatedAt']))
+                    );
+      allow delete: if isVerifiedUser() && isValidId(appointmentId) && (isOwner(existing().ownerId) || isAdmin());
+    }
+
+    match /ehr_records/{ehrId} {
+      allow get: if isSignedIn() && isValidId(ehrId) && (isOwner(existing().ownerId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(ehrId) && isValidEhrRecord(incoming()) &&
+                    incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(ehrId) && isValidEhrRecord(incoming()) &&
+                    incoming().ownerId == existing().ownerId &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().updatedAt == request.time &&
+                    (
+                      isAdmin() ||
+                      (isOwner(existing().ownerId) && incoming().diff(existing()).affectedKeys().hasOnly(['patientId', 'patientName', 'visitDate', 'toothNumber', 'diagnosis', 'procedure', 'prescription', 'dentistName', 'feeLak', 'clinicalNotes', 'updatedAt']))
+                    );
+      allow delete: if isVerifiedUser() && isValidId(ehrId) && (isOwner(existing().ownerId) || isAdmin());
+    }
+
+    match /inventory/{itemId} {
+      allow get: if isSignedIn() && isValidId(itemId) && (isOwner(existing().ownerId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(itemId) && isValidInventoryItem(incoming()) &&
+                    incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(itemId) && isValidInventoryItem(incoming()) &&
+                    incoming().ownerId == existing().ownerId &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().updatedAt == request.time &&
+                    (
+                      isAdmin() ||
+                      (isOwner(existing().ownerId) && incoming().diff(existing()).affectedKeys().hasOnly(['itemName', 'sku', 'category', 'carriedForwardQty', 'quantity', 'minThreshold', 'unit', 'unitCostLak', 'supplier', 'expiryDate', 'updatedAt']))
+                    );
+      allow delete: if isVerifiedUser() && isValidId(itemId) && (isOwner(existing().ownerId) || isAdmin());
+    }
+
+    match /transactions/{txId} {
+      allow get: if isSignedIn() && isValidId(txId) && (isOwner(existing().ownerId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(txId) && isValidTransaction(incoming()) &&
+                    incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(txId) && isValidTransaction(incoming()) &&
+                    incoming().ownerId == existing().ownerId &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().updatedAt == request.time &&
+                    (
+                      isAdmin() ||
+                      (isOwner(existing().ownerId) && incoming().diff(existing()).affectedKeys().hasOnly(['txDate', 'txMonth', 'txType', 'category', 'description', 'amountLak', 'discountLak', 'paidAmountLak', 'balanceDueLak', 'nextPaymentDate', 'installmentCount', 'customerPhone', 'debtReminderStatus', 'paymentMethod', 'referenceName', 'updatedAt']))
+                    );
+      allow delete: if isVerifiedUser() && isValidId(txId) && (isOwner(existing().ownerId) || isAdmin());
+    }
+
+    match /staff/{staffId} {
+      allow get: if isSignedIn() && isValidId(staffId) && (isOwner(existing().ownerId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(staffId) && isValidStaffMember(incoming()) &&
+                    incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(staffId) && isValidStaffMember(incoming()) &&
+                    incoming().ownerId == existing().ownerId &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().updatedAt == request.time &&
+                    (
+                      isAdmin() ||
+                      (isOwner(existing().ownerId) && incoming().diff(existing()).affectedKeys().hasOnly(['fullName', 'email', 'phone', 'role', 'specialty', 'shiftSchedule', 'baseSalaryLak', 'salaryAdvanceLak', 'bonusLak', 'commissionLak', 'lastPaidMonth', 'activeStatus', 'updatedAt']))
+                    );
+      allow delete: if isVerifiedUser() && isValidId(staffId) && (isOwner(existing().ownerId) || isAdmin());
+    }
+
+    match /backups/{backupId} {
+      allow get: if isSignedIn() && isValidId(backupId) && (isOwner(existing().ownerId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(backupId) && isValidBackupLog(incoming()) &&
+                    incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(backupId) && isValidBackupLog(incoming()) &&
+                    incoming().ownerId == existing().ownerId &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().updatedAt == request.time &&
+                    (
+                      isAdmin() ||
+                      (isOwner(existing().ownerId) && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'spreadsheetId', 'spreadsheetUrl', 'recordsCount', 'updatedAt']))
+                    );
+      allow delete: if isVerifiedUser() && isValidId(backupId) && (isOwner(existing().ownerId) || isAdmin());
+    }
+
+    match /chat_messages/{messageId} {
+      allow get: if isSignedIn() && isValidId(messageId) && (isOwner(existing().ownerId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(messageId) && isValidChatMessage(incoming()) &&
+                    incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isVerifiedUser() && isValidId(messageId) && (isOwner(existing().ownerId) || isAdmin());
+    }
+
+    match /clinic_files/{fileId} {
+      allow get: if isSignedIn() && isValidId(fileId) && (isOwner(existing().ownerId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(fileId) && isValidClinicFile(incoming()) &&
+                    incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isVerifiedUser() && isValidId(fileId) && (isOwner(existing().ownerId) || isAdmin());
+    }
+  }
+}

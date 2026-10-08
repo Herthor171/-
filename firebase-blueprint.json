@@ -1,0 +1,222 @@
+{
+  "entities": {
+    "Patient": {
+      "title": "Patient",
+      "description": "Clinic patient personal and medical profile",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "phone": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "age": { "type": "number" },
+        "gender": { "type": "string", "enum": ["Male", "Female", "Other"] },
+        "address": { "type": "string", "maxLength": 250 },
+        "allergies": { "type": "string", "maxLength": 300 },
+        "medicalHistory": { "type": "string", "maxLength": 1000 },
+        "dentalChartNotes": { "type": "string", "maxLength": 2000 },
+        "lastVisit": { "type": "string", "maxLength": 40 },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fullName", "phone", "age", "gender", "address", "allergies", "medicalHistory", "dentalChartNotes", "lastVisit", "ownerId", "createdAt", "updatedAt"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "Patient dental appointment schedule and reminder status",
+      "type": "object",
+      "properties": {
+        "patientId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "patientName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "patientPhone": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "dentistName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "treatmentType": { "type": "string", "minLength": 1, "maxLength": 150 },
+        "appointmentDate": { "type": "string", "minLength": 1, "maxLength": 30 },
+        "appointmentTime": { "type": "string", "minLength": 1, "maxLength": 20 },
+        "status": { "type": "string", "enum": ["Scheduled", "Confirmed", "Completed", "Cancelled"] },
+        "reminderStatus": { "type": "string", "enum": ["Pending", "Queued", "Sent"] },
+        "reminderChannel": { "type": "string", "enum": ["WhatsApp", "SMS", "Phone"] },
+        "notes": { "type": "string", "maxLength": 500 },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["patientId", "patientName", "patientPhone", "dentistName", "treatmentType", "appointmentDate", "appointmentTime", "status", "reminderStatus", "reminderChannel", "notes", "ownerId", "createdAt", "updatedAt"]
+    },
+    "EhrRecord": {
+      "title": "EhrRecord",
+      "description": "Electronic health record entry for dental treatment",
+      "type": "object",
+      "properties": {
+        "patientId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "patientName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "visitDate": { "type": "string", "minLength": 1, "maxLength": 30 },
+        "toothNumber": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "diagnosis": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "procedure": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "prescription": { "type": "string", "maxLength": 500 },
+        "dentistName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "feeLak": { "type": "number" },
+        "clinicalNotes": { "type": "string", "maxLength": 1000 },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["patientId", "patientName", "visitDate", "toothNumber", "diagnosis", "procedure", "prescription", "dentistName", "feeLak", "clinicalNotes", "ownerId", "createdAt", "updatedAt"]
+    },
+    "InventoryItem": {
+      "title": "InventoryItem",
+      "description": "Dental clinic stock item and threshold tracking with carried forward quantity",
+      "type": "object",
+      "properties": {
+        "itemName": { "type": "string", "minLength": 1, "maxLength": 150 },
+        "sku": { "type": "string", "minLength": 1, "maxLength": 50 },
+        "category": { "type": "string", "enum": ["Consumables", "Instruments", "Orthodontics", "Anesthetics", "PPE", "Prosthetics"] },
+        "carriedForwardQty": { "type": "number" },
+        "quantity": { "type": "number" },
+        "minThreshold": { "type": "number" },
+        "unit": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "unitCostLak": { "type": "number" },
+        "supplier": { "type": "string", "maxLength": 150 },
+        "expiryDate": { "type": "string", "maxLength": 30 },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["itemName", "sku", "category", "quantity", "minThreshold", "unit", "unitCostLak", "supplier", "expiryDate", "ownerId", "createdAt", "updatedAt"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Clinic income or expense financial ledger entry with discounts and installment credit tracking",
+      "type": "object",
+      "properties": {
+        "txDate": { "type": "string", "minLength": 1, "maxLength": 30 },
+        "txMonth": { "type": "string", "minLength": 1, "maxLength": 15 },
+        "txType": { "type": "string", "enum": ["Income", "Expense"] },
+        "category": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "description": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "amountLak": { "type": "number" },
+        "discountLak": { "type": "number" },
+        "paidAmountLak": { "type": "number" },
+        "balanceDueLak": { "type": "number" },
+        "nextPaymentDate": { "type": "string", "maxLength": 30 },
+        "installmentCount": { "type": "number" },
+        "customerPhone": { "type": "string", "maxLength": 40 },
+        "debtReminderStatus": { "type": "string", "enum": ["None", "Pending", "Sent"] },
+        "paymentMethod": { "type": "string", "enum": ["BCEL OnePay", "Cash", "Bank Transfer", "Card", "ຕິດໜີ້ / ຜ່ອນຈ່າຍ (Credit)"] },
+        "referenceName": { "type": "string", "maxLength": 120 },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["txDate", "txMonth", "txType", "category", "description", "amountLak", "paymentMethod", "referenceName", "ownerId", "createdAt", "updatedAt"]
+    },
+    "StaffMember": {
+      "title": "StaffMember",
+      "description": "Clinic staff member, RBAC role assignment, and independent payroll advances/bonuses",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "email": { "type": "string", "maxLength": 120 },
+        "phone": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "role": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "specialty": { "type": "string", "maxLength": 120 },
+        "shiftSchedule": { "type": "string", "maxLength": 120 },
+        "baseSalaryLak": { "type": "number" },
+        "salaryAdvanceLak": { "type": "number" },
+        "bonusLak": { "type": "number" },
+        "commissionLak": { "type": "number" },
+        "lastPaidMonth": { "type": "string", "maxLength": 20 },
+        "activeStatus": { "type": "string", "enum": ["Active", "On Leave", "Inactive"] },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fullName", "email", "phone", "role", "specialty", "shiftSchedule", "baseSalaryLak", "activeStatus", "ownerId", "createdAt", "updatedAt"]
+    },
+    "BackupLog": {
+      "title": "BackupLog",
+      "description": "Cloud backup and Google Sheets sync log",
+      "type": "object",
+      "properties": {
+        "backupDate": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "backupType": { "type": "string", "enum": ["Google Sheets Sync", "Cloud JSON Snapshot"] },
+        "spreadsheetId": { "type": "string", "maxLength": 150 },
+        "spreadsheetUrl": { "type": "string", "maxLength": 300 },
+        "recordsCount": { "type": "number" },
+        "status": { "type": "string", "enum": ["Completed", "Failed"] },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["backupDate", "backupType", "spreadsheetId", "spreadsheetUrl", "recordsCount", "status", "ownerId", "createdAt", "updatedAt"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Multi-turn Gemini chatbot conversation message persisted in Firestore",
+      "type": "object",
+      "properties": {
+        "role": { "type": "string", "enum": ["user", "model"] },
+        "text": { "type": "string", "minLength": 1, "maxLength": 10000 },
+        "persona": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "modelUsed": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["role", "text", "persona", "modelUsed", "ownerId", "createdAt"]
+    },
+    "ClinicFile": {
+      "title": "ClinicFile",
+      "description": "Clinic exported CSV/JSON files and uploaded clinical/X-ray/invoice documents stored in Firebase Firestore",
+      "type": "object",
+      "properties": {
+        "fileName": { "type": "string", "minLength": 1, "maxLength": 180 },
+        "category": { "type": "string", "enum": ["Patients", "EHR", "Appointments", "Inventory", "Financials", "Payroll", "Uploaded Document"] },
+        "mimeType": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "sizeBytes": { "type": "number" },
+        "contentData": { "type": "string", "minLength": 1, "maxLength": 900000 },
+        "notes": { "type": "string", "maxLength": 300 },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fileName", "category", "mimeType", "sizeBytes", "contentData", "notes", "ownerId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/patients/{patientId}": {
+      "schema": { "$ref": "#/entities/Patient" },
+      "description": "Clinic patient records"
+    },
+    "/appointments/{appointmentId}": {
+      "schema": { "$ref": "#/entities/Appointment" },
+      "description": "Scheduled appointments and reminder tracking"
+    },
+    "/ehr_records/{ehrId}": {
+      "schema": { "$ref": "#/entities/EhrRecord" },
+      "description": "Electronic health records and clinical procedures"
+    },
+    "/inventory/{itemId}": {
+      "schema": { "$ref": "#/entities/InventoryItem" },
+      "description": "Dental stock inventory and low-stock alert tracking"
+    },
+    "/transactions/{txId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "Clinic income and expense financial ledger"
+    },
+    "/staff/{staffId}": {
+      "schema": { "$ref": "#/entities/StaffMember" },
+      "description": "Clinic staff profiles and RBAC role assignments"
+    },
+    "/backups/{backupId}": {
+      "schema": { "$ref": "#/entities/BackupLog" },
+      "description": "Cloud data backup and Google Sheets synchronization history"
+    },
+    "/chat_messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Persisted multi-turn Gemini chatbot conversation messages"
+    },
+    "/clinic_files/{fileId}": {
+      "schema": { "$ref": "#/entities/ClinicFile" },
+      "description": "Clinic files, CSV reports, and documents stored in Firebase Firestore"
+    }
+  }
+}

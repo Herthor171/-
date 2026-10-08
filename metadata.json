@@ -1,0 +1,8 @@
+{
+  "name": "LK Smile Dental Clinic Management",
+  "description": "Comprehensive dental clinic management system with Lao language support, patient scheduling, electronic health records, automated appointment reminders, financial reporting, stock inventory tracking, staff management, and Google Sheets cloud backup.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
